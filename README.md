@@ -22,4 +22,4 @@ A first-person puzzle game in Unity 6. You have 6 minutes to cook **isombe** in 
 - [Free Kitchen by Boxx-Games](https://assetstore.unity.com/publishers/60462) (Unity Asset Store)
 - [Kenney Food Kit](https://kenney.nl/assets/food-kit)
 - [Kenney Building Kit](https://kenney.nl/assets/building-kit)
-- Sound effects: _add link(s)_
+- Sound effects: (https://pixabay.com/sound-effects/search/african/)
