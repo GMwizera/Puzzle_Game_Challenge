@@ -1,30 +1,28 @@
-using System;
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using TMPro;
 
-// Tracks the 5 layers, updates the progress UI, and handles win/lose.
-// Layers must be solved in order: 0 Gather, 1 Pound, 2 Stove, 3 Cook, 4 Serve.
 public class PuzzleManager : MonoBehaviour
 {
-    public static PuzzleManager Instance { get; private set; }
+    public static PuzzleManager Instance;
+    static bool introSeen = false;
 
-    [SerializeField] int totalLayers = 5;
-    [SerializeField] TMP_Text progressText;
-    [SerializeField] GameObject winPanel;
-    [SerializeField] GameObject losePanel;
-    [SerializeField] TMP_Text loseReasonText;
-    [SerializeField] Door diningDoor;
-    [SerializeField] AudioSource audioSource;
-    [SerializeField] AudioClip layerClip, cheerClip, loseClip;
-    [SerializeField] Color progressFlashColor = new Color(0.55f, 1f, 0.55f);
+    public int totalLayers = 5;
+    public TMP_Text progressText;
+    public GameObject winPanel;
+    public GameObject losePanel;
+    public TMP_Text loseReasonText;
+    public Door diningDoor;
+    public AudioSource audioSource;
+    public AudioClip layerClip;
+    public AudioClip cheerClip;
+    public AudioClip loseClip;
+    public Color progressFlashColor = new Color(0.55f, 1f, 0.55f);
 
-    [Header("Guidance")]
-    [SerializeField] GameObject introPanel;
-    [SerializeField] TMP_Text objectiveText;
-    // What each step is about, never how to solve it. The room's clues do that.
-    [SerializeField] string[] layerGoals =
+    public GameObject introPanel;
+    public TMP_Text objectiveText;
+    public string[] layerGoals =
     {
         "Gather what the recipe calls for",
         "Prepare the cassava leaves",
@@ -32,69 +30,91 @@ public class PuzzleManager : MonoBehaviour
         "Cook: the order matters",
         "Serve the dish",
     };
-    [SerializeField] string finalGoal = "Dinner is ready. Head to the dining room";
+    public string finalGoal = "Dinner is ready. Head to the dining room";
 
-    // Raised with the index of the layer that was just solved. Clues and HUD listen to this.
-    public event Action<int> LayerCompleted;
+    public int completed = 0;
 
-    public int Completed { get; private set; }
-    public int TotalLayers => totalLayers;
-    public bool AllComplete => Completed >= totalLayers;
-    public bool IsPlaying => Time.timeScale > 0f;
+    bool waitingToStart = false;
+    Color progressStartColor;
 
-    Color progressBaseColor;
-    bool waitingToStart;
-    static bool introSeen; // Restart skips the intro card
-
-    void Awake() => Instance = this;
+    void Awake()
+    {
+        Instance = this;
+    }
 
     void Start()
     {
+        completed = 0;
         winPanel.SetActive(false);
         losePanel.SetActive(false);
-        progressBaseColor = progressText.color;
+        progressStartColor = progressText.color;
         UpdateProgress();
 
-        // The intro card holds the game (and the clock) until the player is ready.
-        waitingToStart = introPanel != null && !introSeen;
-        if (introPanel != null) introPanel.SetActive(waitingToStart);
-        Time.timeScale = waitingToStart ? 0f : 1f;
+        if (introPanel != null && !introSeen)
+        {
+            introPanel.SetActive(true);
+            waitingToStart = true;
+            Time.timeScale = 0f;
+        }
+        else
+        {
+            if (introPanel != null)
+            {
+                introPanel.SetActive(false);
+            }
+            Time.timeScale = 1f;
+        }
     }
 
     void Update()
     {
-        if (!waitingToStart) return;
+        if (!waitingToStart)
+        {
+            return;
+        }
 
-        if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space) ||
-            Input.GetKeyDown(KeyCode.Return) || Input.GetMouseButtonDown(0))
+        if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetMouseButtonDown(0))
         {
             waitingToStart = false;
             introSeen = true;
-            StartCoroutine(BeginAfterFrame());
+            StartCoroutine(StartGameNextFrame());
         }
     }
 
-    // Waits one frame so the key that closed the intro is not also used as an interaction.
-    IEnumerator BeginAfterFrame()
+    IEnumerator StartGameNextFrame()
     {
         yield return null;
         introPanel.SetActive(false);
         Time.timeScale = 1f;
     }
 
-    // A puzzle only responds when it is the current layer and the game is running.
-    public bool IsActive(int layerIndex) => IsPlaying && layerIndex == Completed;
+    public bool IsPlaying()
+    {
+        return Time.timeScale > 0f;
+    }
+
+    public bool AllDone()
+    {
+        return completed >= totalLayers;
+    }
+
+    public bool IsActive(int layerIndex)
+    {
+        return IsPlaying() && layerIndex == completed;
+    }
 
     public void CompleteLayer(int layerIndex)
     {
-        if (!IsActive(layerIndex)) return;
+        if (!IsActive(layerIndex))
+        {
+            return;
+        }
 
-        Completed++;
+        completed = completed + 1;
         UpdateProgress();
         StartCoroutine(FlashProgress());
-        LayerCompleted?.Invoke(layerIndex);
 
-        if (AllComplete)
+        if (AllDone())
         {
             diningDoor.Open();
             audioSource.PlayOneShot(cheerClip);
@@ -105,16 +125,21 @@ public class PuzzleManager : MonoBehaviour
         }
     }
 
-    // Called by ExitTrigger when the player walks into the dining room.
     public void Win()
     {
-        if (!AllComplete || !IsPlaying) return;
+        if (!AllDone() || !IsPlaying())
+        {
+            return;
+        }
         EndGame(winPanel);
     }
 
     public void Lose(string reason)
     {
-        if (!IsPlaying) return;
+        if (!IsPlaying())
+        {
+            return;
+        }
         loseReasonText.text = reason;
         audioSource.PlayOneShot(loseClip);
         EndGame(losePanel);
@@ -125,10 +150,9 @@ public class PuzzleManager : MonoBehaviour
         Time.timeScale = 0f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-        StartCoroutine(RevealPanel(panel));
+        StartCoroutine(ShowPanel(panel));
     }
 
-    // Hook this to the Restart buttons on both panels.
     public void Restart()
     {
         Time.timeScale = 1f;
@@ -137,48 +161,68 @@ public class PuzzleManager : MonoBehaviour
 
     void UpdateProgress()
     {
-        progressText.text = $"Puzzle Progress: {Completed} / {totalLayers}";
+        progressText.text = "Puzzle Progress: " + completed + " / " + totalLayers;
 
-        if (objectiveText != null)
-            objectiveText.text = AllComplete ? finalGoal
-                : Completed < layerGoals.Length ? layerGoals[Completed] : "";
+        if (objectiveText == null)
+        {
+            return;
+        }
+
+        if (AllDone())
+        {
+            objectiveText.text = finalGoal;
+        }
+        else if (completed < layerGoals.Length)
+        {
+            objectiveText.text = layerGoals[completed];
+        }
+        else
+        {
+            objectiveText.text = "";
+        }
     }
 
-    // Fades and scales the end panel in. Uses unscaled time because the game is paused.
-    IEnumerator RevealPanel(GameObject panel)
+    IEnumerator ShowPanel(GameObject panel)
     {
         CanvasGroup group = panel.GetComponent<CanvasGroup>();
-        if (group == null) group = panel.AddComponent<CanvasGroup>();
+        if (group == null)
+        {
+            group = panel.AddComponent<CanvasGroup>();
+        }
 
         panel.SetActive(true);
-        Transform t = panel.transform;
 
-        for (float time = 0f; time < 1f; time += Time.unscaledDeltaTime / 0.35f)
+        float duration = 0.35f;
+        float timer = 0f;
+        while (timer < duration)
         {
-            float eased = 1f - Mathf.Pow(1f - time, 3f);
-            group.alpha = eased;
-            t.localScale = Vector3.one * Mathf.Lerp(0.92f, 1f, eased);
+            timer = timer + Time.unscaledDeltaTime;
+            float amount = timer / duration;
+            group.alpha = amount;
+            float scale = Mathf.Lerp(0.92f, 1f, amount);
+            panel.transform.localScale = new Vector3(scale, scale, scale);
             yield return null;
         }
 
         group.alpha = 1f;
-        t.localScale = Vector3.one;
+        panel.transform.localScale = Vector3.one;
     }
 
-    // Brief colour and scale pop on the progress counter when a layer is solved.
     IEnumerator FlashProgress()
     {
-        Transform t = progressText.transform;
-
-        for (float time = 0f; time < 1f; time += Time.deltaTime / 0.6f)
+        float duration = 0.6f;
+        float timer = 0f;
+        while (timer < duration)
         {
-            float pulse = Mathf.Sin(time * Mathf.PI);
-            t.localScale = Vector3.one * (1f + 0.15f * pulse);
-            progressText.color = Color.Lerp(progressBaseColor, progressFlashColor, pulse);
+            timer = timer + Time.deltaTime;
+            float pulse = Mathf.Sin(timer / duration * Mathf.PI);
+            float scale = 1f + 0.15f * pulse;
+            progressText.transform.localScale = new Vector3(scale, scale, scale);
+            progressText.color = Color.Lerp(progressStartColor, progressFlashColor, pulse);
             yield return null;
         }
 
-        t.localScale = Vector3.one;
-        progressText.color = progressBaseColor;
+        progressText.transform.localScale = Vector3.one;
+        progressText.color = progressStartColor;
     }
 }

@@ -1,35 +1,38 @@
 using UnityEngine;
 using UnityEngine.Events;
 
-// Layer 1: pound the cassava leaves on the beat. Missing the beat resets the count.
 public class MortarPuzzle : Interactable
 {
-    [SerializeField] int layerIndex = 1;
-    [SerializeField] int hitsNeeded = 6;
-    [SerializeField] float beatInterval = 0.8f;
-    [SerializeField] float tolerance = 0.2f;
-    [SerializeField] AudioSource audioSource;
-    [SerializeField] AudioClip beatClip, poundClip, missClip;
-    [SerializeField] Renderer leaves;
-    [SerializeField] Color rawColor = new Color(0.55f, 0.8f, 0.35f);
-    [SerializeField] Color doneColor = new Color(0.1f, 0.3f, 0.1f);
+    public int layerIndex = 1;
+    public int hitsNeeded = 6;
+    public float beatInterval = 0.8f;
+    public float tolerance = 0.2f;
+    public AudioSource audioSource;
+    public AudioClip beatClip;
+    public AudioClip poundClip;
+    public AudioClip missClip;
+    public Renderer leaves;
+    public Color rawColor = new Color(0.55f, 0.8f, 0.35f);
+    public Color doneColor = new Color(0.1f, 0.3f, 0.1f);
     public UnityEvent onSolved;
 
-    int hits;
+    int hits = 0;
     float lastBeat = -10f;
-    float nextBeat;
+    float nextBeat = 0f;
 
-    bool Active => PuzzleManager.Instance.IsActive(layerIndex);
-
-    void Start() => leaves.material.color = rawColor;
+    void Start()
+    {
+        leaves.material.color = rawColor;
+    }
 
     void Update()
     {
-        // The gathered leaves only appear in the mortar once gathering is done.
-        leaves.enabled = PuzzleManager.Instance.Completed >= layerIndex;
+        leaves.enabled = PuzzleManager.Instance.completed >= layerIndex;
 
-        // The beat only plays while this is the current layer, which also acts as a sound clue.
-        if (!Active) return;
+        if (!PuzzleManager.Instance.IsActive(layerIndex))
+        {
+            return;
+        }
 
         if (Time.time >= nextBeat)
         {
@@ -41,15 +44,21 @@ public class MortarPuzzle : Interactable
 
     public override void Interact(PlayerInteractor player)
     {
-        if (!Active) return;
+        if (!PuzzleManager.Instance.IsActive(layerIndex))
+        {
+            return;
+        }
 
-        float offBeat = Mathf.Min(Time.time - lastBeat, nextBeat - Time.time);
+        float timeSinceBeat = Time.time - lastBeat;
+        float timeToNextBeat = nextBeat - Time.time;
+        float offBeat = Mathf.Min(timeSinceBeat, timeToNextBeat);
 
         if (offBeat <= tolerance)
         {
-            hits++;
+            hits = hits + 1;
             audioSource.PlayOneShot(poundClip);
-            leaves.material.color = Color.Lerp(rawColor, doneColor, (float)hits / hitsNeeded);
+            float progress = (float)hits / hitsNeeded;
+            leaves.material.color = Color.Lerp(rawColor, doneColor, progress);
 
             if (hits >= hitsNeeded)
             {

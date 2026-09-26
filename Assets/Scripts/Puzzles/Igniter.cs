@@ -1,23 +1,25 @@
 using UnityEngine;
 using UnityEngine.Events;
 
-// Layer 2, step 2: light the stove. Only works when the knob is on the blue flame.
-// Lighting it on the wrong colour costs time, so guessing through every colour is punished.
 public class Igniter : Interactable
 {
-    [SerializeField] int layerIndex = 2;
-    [SerializeField] StoveKnob knob;
-    [SerializeField] GameTimer timer;
-    [SerializeField] float wrongPenaltySeconds = 15f;
-    [SerializeField] AudioSource audioSource;
-    [SerializeField] AudioClip igniteClip, failClip;
+    public int layerIndex = 2;
+    public StoveKnob knob;
+    public GameTimer timer;
+    public float wrongPenaltySeconds = 15f;
+    public AudioSource audioSource;
+    public AudioClip igniteClip;
+    public AudioClip failClip;
     public UnityEvent onSolved;
 
     public override void Interact(PlayerInteractor player)
     {
-        if (!PuzzleManager.Instance.IsActive(layerIndex)) return;
+        if (!PuzzleManager.Instance.IsActive(layerIndex))
+        {
+            return;
+        }
 
-        if (knob.OnCorrectColour)
+        if (knob.IsOnCorrectColour())
         {
             audioSource.PlayOneShot(igniteClip);
             onSolved.Invoke();

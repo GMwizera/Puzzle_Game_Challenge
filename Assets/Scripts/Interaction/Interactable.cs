@@ -1,11 +1,15 @@
 using UnityEngine;
 
-// Base class for anything the player can use.
-public abstract class Interactable : MonoBehaviour
+public class Interactable : MonoBehaviour
 {
-    [SerializeField] string prompt = "Use";
+    public string prompt = "Use";
 
-    public virtual string Prompt => prompt;
+    public virtual string GetPrompt()
+    {
+        return prompt;
+    }
 
-    public abstract void Interact(PlayerInteractor player);
+    public virtual void Interact(PlayerInteractor player)
+    {
+    }
 }

@@ -1,18 +1,28 @@
 using UnityEngine;
 
-// A one-shot interactable that swings a door open, e.g. a cupboard or pantry door.
 public class OpenOnUse : Interactable
 {
-    [SerializeField] Door door;
+    public Door door;
+    public string closePrompt = "Close fridge";
 
-    bool used;
-
-    public override string Prompt => used ? "" : base.Prompt;
+    public override string GetPrompt()
+    {
+        if (door.IsOpen())
+        {
+            return closePrompt;
+        }
+        return prompt;
+    }
 
     public override void Interact(PlayerInteractor player)
     {
-        if (used) return;
-        used = true;
-        door.Open();
+        if (door.IsOpen())
+        {
+            door.Close();
+        }
+        else
+        {
+            door.Open();
+        }
     }
 }

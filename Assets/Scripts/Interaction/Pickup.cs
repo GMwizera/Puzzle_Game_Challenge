@@ -1,37 +1,43 @@
 using UnityEngine;
 
-// An object the player can carry: ingredients, decoys, prep bowls, the dish.
-[RequireComponent(typeof(Rigidbody))]
 public class Pickup : Interactable
 {
     public string itemId;
+    public bool isLocked = false;
 
     Rigidbody rb;
     Collider col;
-    Transform homeParent;
-    Vector3 homePosition;
-    Quaternion homeRotation;
-    bool homeKinematic;
-
-    public bool Locked { get; private set; }
-    public override string Prompt => Locked ? "" : base.Prompt;
+    Transform startParent;
+    Vector3 startPosition;
+    Quaternion startRotation;
+    bool startKinematic;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
         col = GetComponentInChildren<Collider>();
-        homeParent = transform.parent;
-        homePosition = transform.position;
-        homeRotation = transform.rotation;
-        homeKinematic = rb.isKinematic;
+        startParent = transform.parent;
+        startPosition = transform.position;
+        startRotation = transform.rotation;
+        startKinematic = rb.isKinematic;
+    }
+
+    public override string GetPrompt()
+    {
+        if (isLocked)
+        {
+            return "";
+        }
+        return prompt;
     }
 
     public override void Interact(PlayerInteractor player)
     {
-        if (!Locked) player.Hold(this);
+        if (!isLocked)
+        {
+            player.Hold(this);
+        }
     }
-
-    public void SetLocked(bool locked) => Locked = locked;
 
     public void AttachTo(Transform point)
     {
@@ -49,37 +55,46 @@ public class Pickup : Interactable
         col.enabled = true;
     }
 
-    // Sits the item upright on a slot at its real size. It is not parented to the slot,
-    // because slots usually live inside scaled furniture and would stretch the item.
     public void SnapTo(Transform slot)
     {
         transform.SetParent(null);
         rb.isKinematic = true;
         col.enabled = true;
-        Locked = true;
+        isLocked = true;
 
-        transform.SetPositionAndRotation(slot.position, Quaternion.Euler(0f, transform.eulerAngles.y, 0f));
-        Bounds b = WorldBounds();
-        transform.position += new Vector3(slot.position.x - b.center.x, slot.position.y - b.min.y, slot.position.z - b.center.z);
+        transform.position = slot.position;
+        transform.rotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
+
+        Bounds bounds = GetBounds();
+        float moveX = slot.position.x - bounds.center.x;
+        float moveY = slot.position.y - bounds.min.y;
+        float moveZ = slot.position.z - bounds.center.z;
+        transform.position = transform.position + new Vector3(moveX, moveY, moveZ);
     }
 
-    // Puts the item back where the level designer placed it.
+    public Vector3 GetHomePosition()
+    {
+        return startPosition;
+    }
+
     public void ReturnHome()
     {
         gameObject.SetActive(true);
-        transform.SetParent(homeParent);
-        transform.SetPositionAndRotation(homePosition, homeRotation);
-        rb.isKinematic = homeKinematic;
+        transform.SetParent(startParent);
+        transform.position = startPosition;
+        transform.rotation = startRotation;
+        rb.isKinematic = startKinematic;
         col.enabled = true;
     }
 
-    Bounds WorldBounds()
+    Bounds GetBounds()
     {
         Renderer[] renderers = GetComponentsInChildren<Renderer>();
-        if (renderers.Length == 0) return new Bounds(transform.position, Vector3.zero);
-
-        Bounds b = renderers[0].bounds;
-        foreach (Renderer r in renderers) b.Encapsulate(r.bounds);
-        return b;
+        Bounds bounds = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++)
+        {
+            bounds.Encapsulate(renderers[i].bounds);
+        }
+        return bounds;
     }
 }

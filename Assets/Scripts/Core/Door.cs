@@ -1,21 +1,43 @@
 using UnityEngine;
 
-// Put this on an empty "Hinge" object, with the door mesh as its child.
 public class Door : MonoBehaviour
 {
-    [SerializeField] float openAngle = 100f;
-    [SerializeField] float speed = 2f;
+    public float openAngle = 100f;
+    public float speed = 2f;
 
+    Quaternion closedRotation;
     Quaternion openRotation;
-    bool opening;
+    bool isOpen = false;
 
-    void Start() => openRotation = transform.localRotation * Quaternion.Euler(0f, openAngle, 0f);
+    void Start()
+    {
+        closedRotation = transform.localRotation;
+        openRotation = closedRotation * Quaternion.Euler(0f, openAngle, 0f);
+    }
 
-    public void Open() => opening = true;
+    public void Open()
+    {
+        isOpen = true;
+    }
+
+    public void Close()
+    {
+        isOpen = false;
+    }
+
+    public bool IsOpen()
+    {
+        return isOpen;
+    }
 
     void Update()
     {
-        if (opening)
-            transform.localRotation = Quaternion.Slerp(transform.localRotation, openRotation, speed * Time.deltaTime);
+        Quaternion target = closedRotation;
+        if (isOpen)
+        {
+            target = openRotation;
+        }
+
+        transform.localRotation = Quaternion.Slerp(transform.localRotation, target, speed * Time.deltaTime);
     }
 }

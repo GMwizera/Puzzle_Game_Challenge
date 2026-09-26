@@ -1,47 +1,58 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
-// Trigger area that accepts specific items. Used for Layer 0 (counter) and Layer 4 (serving tray).
-// Each accepted id can only be placed once, and decoys (e.g. the banana) are rejected.
-public class PlacementZone : MonoBehaviour, IDropTarget
+public class PlacementZone : MonoBehaviour
 {
-    [SerializeField] int layerIndex;
-    [SerializeField] string[] acceptedIds;
-    [SerializeField] Transform[] slots;
-    [SerializeField] AudioSource audioSource;
-    [SerializeField] AudioClip acceptClip, rejectClip;
+    public int layerIndex;
+    public string[] acceptedIds;
+    public Transform[] slots;
+    public AudioSource audioSource;
+    public AudioClip acceptClip;
+    public AudioClip rejectClip;
     public UnityEvent onSolved;
 
-    // Raised for every accepted item, so other objects (e.g. prep bowls) can react.
-    public static event Action<Pickup> ItemPlaced;
+    List<string> placedIds = new List<string>();
 
-    readonly HashSet<string> filled = new();
-
-    public string DropPrompt => "Place";
+    public bool HasItem(string id)
+    {
+        return placedIds.Contains(id);
+    }
 
     public bool TryPlace(Pickup item)
     {
-        if (!PuzzleManager.Instance.IsActive(layerIndex)) return false;
+        if (!PuzzleManager.Instance.IsActive(layerIndex))
+        {
+            return false;
+        }
 
-        if (Array.IndexOf(acceptedIds, item.itemId) < 0 || !filled.Add(item.itemId))
+        int index = System.Array.IndexOf(acceptedIds, item.itemId);
+
+        if (index == -1 || placedIds.Contains(item.itemId))
         {
             audioSource.PlayOneShot(rejectClip);
             return false;
         }
 
-        // With one slot per accepted id, each item has its own spot (e.g. in front of its prep bowl).
-        int slot = slots.Length == acceptedIds.Length ? Array.IndexOf(acceptedIds, item.itemId) : filled.Count - 1;
-        item.SnapTo(slots[slot]);
-        audioSource.PlayOneShot(acceptClip);
-        ItemPlaced?.Invoke(item);
+        placedIds.Add(item.itemId);
 
-        if (filled.Count == acceptedIds.Length)
+        if (slots.Length == acceptedIds.Length)
+        {
+            item.SnapTo(slots[index]);
+        }
+        else
+        {
+            item.SnapTo(slots[placedIds.Count - 1]);
+        }
+
+        audioSource.PlayOneShot(acceptClip);
+
+        if (placedIds.Count == acceptedIds.Length)
         {
             onSolved.Invoke();
             PuzzleManager.Instance.CompleteLayer(layerIndex);
         }
+
         return true;
     }
 }

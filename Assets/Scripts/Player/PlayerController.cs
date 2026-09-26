@@ -1,17 +1,15 @@
 using UnityEngine;
 
-// Simple first-person movement: WASD to move, mouse to look.
-[RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField] Transform cameraTransform;
-    [SerializeField] float moveSpeed = 3.5f;
-    [SerializeField] float mouseSensitivity = 2f;
-    [SerializeField] float gravity = -9.81f;
+    public Transform cameraTransform;
+    public float moveSpeed = 3.5f;
+    public float mouseSensitivity = 2f;
+    public float gravity = -9.81f;
 
     CharacterController controller;
-    float pitch;
-    float verticalVelocity;
+    float pitch = 0f;
+    float verticalVelocity = 0f;
 
     void Start()
     {
@@ -22,19 +20,31 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        if (Time.timeScale == 0f) return;
+        if (Time.timeScale == 0f)
+        {
+            return;
+        }
 
-        // Look
-        transform.Rotate(0f, Input.GetAxis("Mouse X") * mouseSensitivity, 0f);
-        pitch = Mathf.Clamp(pitch - Input.GetAxis("Mouse Y") * mouseSensitivity, -80f, 80f);
+        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
+        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
+
+        transform.Rotate(0f, mouseX, 0f);
+        pitch = pitch - mouseY;
+        pitch = Mathf.Clamp(pitch, -80f, 80f);
         cameraTransform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
 
-        // Move
-        Vector3 move = transform.right * Input.GetAxis("Horizontal") + transform.forward * Input.GetAxis("Vertical");
+        float moveX = Input.GetAxis("Horizontal");
+        float moveZ = Input.GetAxis("Vertical");
+        Vector3 move = transform.right * moveX + transform.forward * moveZ;
 
-        if (controller.isGrounded && verticalVelocity < 0f) verticalVelocity = -2f;
-        verticalVelocity += gravity * Time.deltaTime;
+        if (controller.isGrounded && verticalVelocity < 0f)
+        {
+            verticalVelocity = -2f;
+        }
+        verticalVelocity = verticalVelocity + gravity * Time.deltaTime;
 
-        controller.Move((move * moveSpeed + Vector3.up * verticalVelocity) * Time.deltaTime);
+        Vector3 velocity = move * moveSpeed;
+        velocity.y = verticalVelocity;
+        controller.Move(velocity * Time.deltaTime);
     }
 }
