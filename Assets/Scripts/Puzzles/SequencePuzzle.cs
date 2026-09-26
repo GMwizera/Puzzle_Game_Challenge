@@ -1,9 +1,10 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
-// Layer 3: add ingredients to the pot in the order shown by the coloured dots on the lid.
-// A wrong ingredient makes smoke, resets the order and costs time.
-public class SequencePuzzle : MonoBehaviour
+// Layer 3: carry the prep bowls to the pot in the order shown by the coloured dots on the wall.
+// A wrong bowl makes smoke, sends every bowl back to its place and costs time.
+public class SequencePuzzle : MonoBehaviour, IDropTarget
 {
     [SerializeField] int layerIndex = 3;
     [SerializeField] string[] correctOrder = { "oil", "onion", "eggplant", "leaves" };
@@ -14,29 +15,37 @@ public class SequencePuzzle : MonoBehaviour
     [SerializeField] AudioClip sizzleClip, failClip;
     public UnityEvent onSolved;
 
-    int step;
+    readonly List<Pickup> added = new();
 
-    public void Submit(string id)
+    public string DropPrompt => "Add to pot";
+    public IReadOnlyList<string> CorrectOrder => correctOrder;
+
+    public bool TryPlace(Pickup item)
     {
-        if (!PuzzleManager.Instance.IsActive(layerIndex)) return;
+        if (!PuzzleManager.Instance.IsActive(layerIndex)) return false;
 
-        if (id == correctOrder[step])
+        if (item.itemId == correctOrder[added.Count])
         {
-            step++;
+            added.Add(item);
+            item.gameObject.SetActive(false);
             audioSource.PlayOneShot(sizzleClip);
 
-            if (step == correctOrder.Length)
+            if (added.Count == correctOrder.Length)
             {
                 onSolved.Invoke();
                 PuzzleManager.Instance.CompleteLayer(layerIndex);
             }
+            return true;
         }
-        else
-        {
-            step = 0;
-            smoke.Play();
-            audioSource.PlayOneShot(failClip);
-            timer.Penalize(wrongPenaltySeconds);
-        }
+
+        // Wrong ingredient: the dish is spoiled, start the order again.
+        smoke.Play();
+        audioSource.PlayOneShot(failClip);
+        timer.Penalize(wrongPenaltySeconds);
+
+        foreach (Pickup bowl in added) bowl.ReturnHome();
+        added.Clear();
+        item.ReturnHome();
+        return true;
     }
 }

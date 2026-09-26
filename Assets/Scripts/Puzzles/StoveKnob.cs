@@ -1,7 +1,7 @@
 using UnityEngine;
-using UnityEngine.Events;
 
-// Layer 2: turn the knob until the flame matches the blue flame icon.
+// Layer 2, step 1: each turn of the knob cycles the flame colour.
+// The Igniter checks the colour; the blue flame icon on the wall is the clue.
 public class StoveKnob : Interactable
 {
     [SerializeField] int layerIndex = 2;
@@ -11,9 +11,10 @@ public class StoveKnob : Interactable
     [SerializeField] Renderer flameRenderer;
     [SerializeField] AudioSource audioSource;
     [SerializeField] AudioClip clickClip;
-    public UnityEvent onSolved;
 
     int current = -1;
+
+    public bool OnCorrectColour => current == correctIndex;
 
     void Start()
     {
@@ -35,11 +36,5 @@ public class StoveKnob : Interactable
         flameRenderer.enabled = true;
         flameRenderer.material.color = c;
         flameRenderer.material.SetColor("_EmissionColor", c * 3f);
-
-        if (current == correctIndex)
-        {
-            onSolved.Invoke();
-            PuzzleManager.Instance.CompleteLayer(layerIndex);
-        }
     }
 }

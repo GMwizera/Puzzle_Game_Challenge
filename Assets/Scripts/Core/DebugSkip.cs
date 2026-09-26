@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Editor testing helper. Not part of the game.
+// Editor testing helper. Not part of the game, and compiled out of release builds.
 //   N  complete the current layer
 //   R  restart the scene
 //   T  add 60 seconds to the clock
@@ -9,6 +9,7 @@ public class DebugSkip : MonoBehaviour
     [SerializeField] bool enableDebugKeys = true;
     [SerializeField] GameTimer timer;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     void Update()
     {
         if (!enableDebugKeys) return;
@@ -26,4 +27,5 @@ public class DebugSkip : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.T) && timer != null)
             timer.Penalize(-60f);
     }
+#endif
 }

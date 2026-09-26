@@ -25,6 +25,9 @@ public class MortarPuzzle : Interactable
 
     void Update()
     {
+        // The gathered leaves only appear in the mortar once gathering is done.
+        leaves.enabled = PuzzleManager.Instance.Completed >= layerIndex;
+
         // The beat only plays while this is the current layer, which also acts as a sound clue.
         if (!Active) return;
 
@@ -44,8 +47,7 @@ public class MortarPuzzle : Interactable
 
         if (offBeat <= tolerance)
         {
-           hits++;
-Debug.Log($"hits {hits} / {hitsNeeded}");
+            hits++;
             audioSource.PlayOneShot(poundClip);
             leaves.material.color = Color.Lerp(rawColor, doneColor, (float)hits / hitsNeeded);
 
