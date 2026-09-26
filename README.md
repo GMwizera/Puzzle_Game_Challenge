@@ -2,7 +2,7 @@
 
 A first-person puzzle game in Unity 6. You have 6 minutes to cook **isombe** in a Rwandan kitchen. Solve five steps in order to open the dining room door and escape. If time runs out, the dish burns.
 
-🎥 Gameplay video: _add link here_
+🎥 Gameplay video: (https://youtu.be/CU_IR5EL-xc)
 
 ## Controls
 | Action | Input |
