@@ -1,20 +1,16 @@
 using UnityEngine;
 
-// Layer 2, step 1: each turn of the knob cycles the flame colour.
-// The Igniter checks the colour; the blue flame icon on the wall is the clue.
 public class StoveKnob : Interactable
 {
-    [SerializeField] int layerIndex = 2;
-    [SerializeField] Color[] flameColors = { Color.red, new Color(1f, 0.5f, 0f), Color.yellow, Color.blue };
-    [SerializeField] int correctIndex = 3;
-    [SerializeField] Light flameLight;
-    [SerializeField] Renderer flameRenderer;
-    [SerializeField] AudioSource audioSource;
-    [SerializeField] AudioClip clickClip;
+    public int layerIndex = 2;
+    public Color[] flameColors = { Color.red, new Color(1f, 0.5f, 0f), Color.yellow, Color.blue };
+    public int correctIndex = 3;
+    public Light flameLight;
+    public Renderer flameRenderer;
+    public AudioSource audioSource;
+    public AudioClip clickClip;
 
     int current = -1;
-
-    public bool OnCorrectColour => current == correctIndex;
 
     void Start()
     {
@@ -22,19 +18,32 @@ public class StoveKnob : Interactable
         flameRenderer.enabled = false;
     }
 
+    public bool IsOnCorrectColour()
+    {
+        return current == correctIndex;
+    }
+
     public override void Interact(PlayerInteractor player)
     {
-        if (!PuzzleManager.Instance.IsActive(layerIndex)) return;
+        if (!PuzzleManager.Instance.IsActive(layerIndex))
+        {
+            return;
+        }
 
-        current = (current + 1) % flameColors.Length;
-        transform.Rotate(0f, 0f, -45f); // change the axis if your knob model turns differently
+        current = current + 1;
+        if (current >= flameColors.Length)
+        {
+            current = 0;
+        }
+
+        transform.Rotate(0f, 0f, -45f);
         audioSource.PlayOneShot(clickClip);
 
-        Color c = flameColors[current];
+        Color color = flameColors[current];
         flameLight.enabled = true;
-        flameLight.color = c;
+        flameLight.color = color;
         flameRenderer.enabled = true;
-        flameRenderer.material.color = c;
-        flameRenderer.material.SetColor("_EmissionColor", c * 3f);
+        flameRenderer.material.color = color;
+        flameRenderer.material.SetColor("_EmissionColor", color * 3f);
     }
 }

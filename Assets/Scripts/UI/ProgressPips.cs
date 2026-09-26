@@ -1,53 +1,68 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// A row of dots under the progress text: filled for solved layers, a pulsing ring for the current one.
-// Builds its own child images at start, so it only needs a RectTransform and two sprites.
-[RequireComponent(typeof(RectTransform))]
 public class ProgressPips : MonoBehaviour
 {
-    [SerializeField] Sprite dotSprite;
-    [SerializeField] Sprite ringSprite;
-    [SerializeField] float size = 18f;
-    [SerializeField] float spacing = 12f;
-    [SerializeField] Color doneColor = new Color(0.55f, 1f, 0.55f);
-    [SerializeField] Color currentColor = new Color(1f, 0.82f, 0.35f);
-    [SerializeField] Color pendingColor = new Color(1f, 1f, 1f, 0.3f);
+    public Sprite dotSprite;
+    public Sprite ringSprite;
+    public float size = 18f;
+    public float spacing = 12f;
+    public Color doneColor = new Color(0.55f, 1f, 0.55f);
+    public Color currentColor = new Color(1f, 0.82f, 0.35f);
+    public Color pendingColor = new Color(1f, 1f, 1f, 0.3f);
 
     Image[] pips;
 
     void Start()
     {
-        int count = PuzzleManager.Instance.TotalLayers;
+        int count = PuzzleManager.Instance.totalLayers;
         pips = new Image[count];
-        float width = count * size + (count - 1) * spacing;
+        float totalWidth = count * size + (count - 1) * spacing;
 
         for (int i = 0; i < count; i++)
         {
-            var go = new GameObject($"Pip{i}", typeof(RectTransform), typeof(Image));
-            var rt = (RectTransform)go.transform;
-            rt.SetParent(transform, false);
-            rt.sizeDelta = new Vector2(size, size);
-            rt.anchoredPosition = new Vector2(-width / 2f + size / 2f + i * (size + spacing), 0f);
-            pips[i] = go.GetComponent<Image>();
-            pips[i].raycastTarget = false;
+            GameObject pip = new GameObject("Pip" + i, typeof(RectTransform));
+            pip.transform.SetParent(transform, false);
+
+            Image image = pip.AddComponent<Image>();
+            image.raycastTarget = false;
+
+            RectTransform rect = pip.GetComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(size, size);
+            float x = -totalWidth / 2f + size / 2f + i * (size + spacing);
+            rect.anchoredPosition = new Vector2(x, 0f);
+
+            pips[i] = image;
         }
     }
 
     void Update()
     {
-        int completed = PuzzleManager.Instance.Completed;
+        int completed = PuzzleManager.Instance.completed;
 
         for (int i = 0; i < pips.Length; i++)
         {
             Image pip = pips[i];
-            bool current = i == completed;
+            float scale = 1f;
 
-            pip.sprite = i < completed ? dotSprite : ringSprite;
-            pip.color = i < completed ? doneColor : current ? currentColor : pendingColor;
+            if (i < completed)
+            {
+                pip.sprite = dotSprite;
+                pip.color = doneColor;
+            }
+            else if (i == completed)
+            {
+                pip.sprite = ringSprite;
+                pip.color = currentColor;
+                scale = 1f + 0.2f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 3f));
+            }
+            else
+            {
+                pip.sprite = ringSprite;
+                pip.color = pendingColor;
+            }
 
-            float pulse = current ? 1f + 0.2f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 3f)) : 1f;
-            pip.transform.localScale = Vector3.one * pulse;
+            pip.transform.localScale = new Vector3(scale, scale, scale);
         }
     }
 }

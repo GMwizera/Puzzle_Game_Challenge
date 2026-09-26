@@ -1,19 +1,18 @@
 using System.Collections;
 using UnityEngine;
 
-// Keeps an object hidden (and untouchable) until a layer is solved, then pops it in.
-// Used for the finished dish, which only exists once the cooking layer is done.
 public class RevealOnLayer : MonoBehaviour
 {
-    [SerializeField] int revealAfterLayer = 3;
-    [SerializeField] AudioSource audioSource;
-    [SerializeField] AudioClip revealClip;
+    public int revealAfterLayer = 3;
+    public AudioSource audioSource;
+    public AudioClip revealClip;
 
     Renderer[] renderers;
     Collider[] colliders;
     Pickup pickup;
+    bool shown = false;
 
-    void Awake()
+    void Start()
     {
         renderers = GetComponentsInChildren<Renderer>();
         colliders = GetComponentsInChildren<Collider>();
@@ -21,36 +20,56 @@ public class RevealOnLayer : MonoBehaviour
         SetVisible(false);
     }
 
-    void Start() => PuzzleManager.Instance.LayerCompleted += OnLayerCompleted;
-
-    void OnDestroy()
+    void Update()
     {
-        if (PuzzleManager.Instance != null) PuzzleManager.Instance.LayerCompleted -= OnLayerCompleted;
-    }
+        if (shown)
+        {
+            return;
+        }
 
-    void OnLayerCompleted(int layer)
-    {
-        if (layer != revealAfterLayer) return;
-        SetVisible(true);
-        if (audioSource != null && revealClip != null) audioSource.PlayOneShot(revealClip);
-        StartCoroutine(Pop());
+        if (PuzzleManager.Instance.completed > revealAfterLayer)
+        {
+            shown = true;
+            SetVisible(true);
+            if (audioSource != null && revealClip != null)
+            {
+                audioSource.PlayOneShot(revealClip);
+            }
+            StartCoroutine(Pop());
+        }
     }
 
     void SetVisible(bool visible)
     {
-        foreach (Renderer r in renderers) r.enabled = visible;
-        foreach (Collider c in colliders) c.enabled = visible;
-        if (pickup != null) pickup.SetLocked(!visible);
+        foreach (Renderer rend in renderers)
+        {
+            rend.enabled = visible;
+        }
+        foreach (Collider col in colliders)
+        {
+            col.enabled = visible;
+        }
+        if (pickup != null)
+        {
+            pickup.isLocked = !visible;
+        }
     }
 
     IEnumerator Pop()
     {
-        Vector3 scale = transform.localScale;
-        for (float t = 0f; t < 1f; t += Time.deltaTime / 0.4f)
+        Vector3 startScale = transform.localScale;
+        float duration = 0.4f;
+        float timer = 0f;
+
+        while (timer < duration)
         {
-            transform.localScale = scale * (1f - Mathf.Pow(1f - t, 3f) * 0.8f + 0.15f * Mathf.Sin(t * Mathf.PI));
+            timer = timer + Time.deltaTime;
+            float amount = timer / duration;
+            float scale = Mathf.Lerp(0.2f, 1f, amount) + 0.15f * Mathf.Sin(amount * Mathf.PI);
+            transform.localScale = startScale * scale;
             yield return null;
         }
-        transform.localScale = scale;
+
+        transform.localScale = startScale;
     }
 }

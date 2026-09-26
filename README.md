@@ -75,38 +75,25 @@ All gameplay code is in `Assets/Scripts`, written for this project:
 
 | Folder | Script | Responsibility |
 |---|---|---|
-| Core | `PuzzleManager` | Layer order, progress UI, win/lose, restart. Raises a `LayerCompleted` event |
+| Core | `PuzzleManager` | Layer order, progress UI, intro card, win/lose, restart |
 | Core | `GameTimer` | Countdown lose condition, time penalties, warning pulse |
 | Core | `Door`, `ExitTrigger` | Door animation; **trigger collider** that wins the game |
 | Core | `OpenOnUse` | Reusable one-shot "open this door" interactable |
-| Core | `DebugSkip` | Editor-only test keys (compiled out of release builds) |
+| Core | `DebugSkip` | Test keys that only work inside the Unity Editor |
 | Interaction | `Interactable` | Abstract base for everything the player can use |
-| Interaction | `Pickup`, `PlacementZone`, `IDropTarget` | Carry, place and return objects; **trigger zones** that accept only the right items |
-| Interaction | `HoverHighlight` | Glow on the object under the crosshair |
-| Player | `PlayerController`, `PlayerInteractor` | First-person movement; raycast interaction, prompts, crosshair feedback |
+| Interaction | `Pickup`, `PlacementZone` | Carry, place and return objects; **trigger zones** that accept only the right items |
+| Player | `PlayerController`, `PlayerInteractor` | First-person movement; raycast interaction, prompts, hover glow, crosshair feedback |
 | Puzzles | `MortarPuzzle` | Rhythm puzzle (timing window, hit counter, reset on a miss) |
 | Puzzles | `StoveKnob`, `Igniter` | Colour selection and ignition with a penalty |
 | Puzzles | `SequencePuzzle` | The pot: ordered drop target with reset and penalty |
-| Puzzles | `PrepBowl` | Bowl that fills when its ingredient is gathered or pounded (listens to events) |
+| Puzzles | `PrepBowl` | Bowl that fills when its ingredient is on the counter, or once the leaves are pounded |
 | Puzzles | `RevealOnLayer` | Keeps the finished dish hidden until the cooking layer is solved |
 | UI | `LayerClue`, `ProgressPips`, `StationLight` | Layer-aware clue animation; HUD progress dots; station spotlights that point the way |
-| Editor | `KitchenLayout`, `KitchenSetup` | One-click scene build and wiring (see below) |
 
 Where the brief's technical requirements show up in the code:
 - **Colliders and triggers:** `ExitTrigger` (`OnTriggerEnter`), `PlacementZone` trigger volumes, and a raycast against interactable colliders.
 - **Conditional logic:** `bool` gates such as `IsActive` and `OnCorrectColour`, counters (`hits`, `step`, `Completed`) and resets.
-- **Event-based interaction:** each puzzle exposes a `UnityEvent onSolved`. `PuzzleManager` raises a C# `LayerCompleted` event and `PlacementZone` raises `ItemPlaced`. The prep bowls listen to both.
-
-### Scene setup (run once)
-Open `Assets/Scenes/Kitchen.unity`, then choose **Tools ▸ Isombe Kitchen ▸ Apply Scene Setup**. The tool is safe to run again. It:
-1. makes *Kitchen* the build scene,
-2. builds the room from the Free Kitchen pack (with collision), closes it with Kenney walls, a window and a door, and adds the dining room,
-3. places every station on real surfaces (raycast), using the stove's own knobs for the knob and igniter,
-4. turns the bowls into prep bowls, the pot into a drop zone and the fridge door into an openable door,
-5. gives interactables clear action prompts,
-6. hooks up the crosshair, progress dots, goal line and intro card,
-7. makes the station lights guide the player,
-8. builds the clue boards (fridge door, stove, above the bowls).
+- **Event-based interaction:** each puzzle exposes a `UnityEvent onSolved`, `ExitTrigger` uses `OnTriggerEnter`, and interactables respond to the player's `Interact` call.
 
 ---
 
@@ -120,7 +107,7 @@ Assets/
 ├── Materials/       Project materials (bowls, flame, walls, floor, outline)
 ├── Prefabs/         Ingredient pickups (onion, oil, eggplant, leaves, banana)
 ├── Scenes/          Kitchen.unity (the game)
-├── Scripts/         Core · Interaction · Player · Puzzles · UI · Editor
+├── Scripts/         Core · Interaction · Player · Puzzles · UI
 └── ThirdParty/      Imported asset packs, unchanged, one folder per source
 ```
 

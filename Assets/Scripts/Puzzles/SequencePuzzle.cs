@@ -2,29 +2,30 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
-// Layer 3: carry the prep bowls to the pot in the order shown by the coloured dots on the wall.
-// A wrong bowl makes smoke, sends every bowl back to its place and costs time.
-public class SequencePuzzle : MonoBehaviour, IDropTarget
+public class SequencePuzzle : MonoBehaviour
 {
-    [SerializeField] int layerIndex = 3;
-    [SerializeField] string[] correctOrder = { "oil", "onion", "eggplant", "leaves" };
-    [SerializeField] float wrongPenaltySeconds = 20f;
-    [SerializeField] GameTimer timer;
-    [SerializeField] ParticleSystem smoke;
-    [SerializeField] AudioSource audioSource;
-    [SerializeField] AudioClip sizzleClip, failClip;
+    public int layerIndex = 3;
+    public string[] correctOrder = { "oil", "onion", "eggplant", "leaves" };
+    public float wrongPenaltySeconds = 20f;
+    public GameTimer timer;
+    public ParticleSystem smoke;
+    public AudioSource audioSource;
+    public AudioClip sizzleClip;
+    public AudioClip failClip;
     public UnityEvent onSolved;
 
-    readonly List<Pickup> added = new();
-
-    public string DropPrompt => "Add to pot";
-    public IReadOnlyList<string> CorrectOrder => correctOrder;
+    List<Pickup> added = new List<Pickup>();
 
     public bool TryPlace(Pickup item)
     {
-        if (!PuzzleManager.Instance.IsActive(layerIndex)) return false;
+        if (!PuzzleManager.Instance.IsActive(layerIndex))
+        {
+            return false;
+        }
 
-        if (item.itemId == correctOrder[added.Count])
+        string nextId = correctOrder[added.Count];
+
+        if (item.itemId == nextId)
         {
             added.Add(item);
             item.gameObject.SetActive(false);
@@ -38,12 +39,14 @@ public class SequencePuzzle : MonoBehaviour, IDropTarget
             return true;
         }
 
-        // Wrong ingredient: the dish is spoiled, start the order again.
         smoke.Play();
         audioSource.PlayOneShot(failClip);
         timer.Penalize(wrongPenaltySeconds);
 
-        foreach (Pickup bowl in added) bowl.ReturnHome();
+        foreach (Pickup bowl in added)
+        {
+            bowl.ReturnHome();
+        }
         added.Clear();
         item.ReturnHome();
         return true;

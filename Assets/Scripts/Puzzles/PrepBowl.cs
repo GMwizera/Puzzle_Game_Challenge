@@ -1,104 +1,100 @@
 using System.Collections;
 using UnityEngine;
 
-// A prep bowl for the cooking step. It starts grey, empty and cannot be picked up.
-// It fills with its ingredient's colour when that ingredient reaches the counter,
-// or, for the cassava leaves, when the pounding layer is finished.
-// This links every earlier layer to the cooking layer.
-[RequireComponent(typeof(Pickup))]
 public class PrepBowl : MonoBehaviour
 {
-    const int FillOnPlaced = -1;
-
-    [Tooltip("-1: fill when this ingredient is placed on the counter. Otherwise: fill when this layer is solved.")]
-    [SerializeField] int fillOnLayer = FillOnPlaced;
-    [SerializeField] Color emptyColor = new Color(0.45f, 0.45f, 0.45f);
-    [SerializeField] string contentMaterialPrefix = "M_Bowl";
-
-    static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
-    static readonly int LegacyColor = Shader.PropertyToID("_Color");
+    public int fillOnLayer = -1;
+    public Color emptyColor = new Color(0.45f, 0.45f, 0.45f);
+    public string contentMaterialPrefix = "M_Bowl";
 
     Pickup pickup;
-    Renderer[] renderers;
-    Color fullColor = Color.white;
-    MaterialPropertyBlock block;
-    bool filled;
-
-    public bool Filled => filled;
-
-    void Awake()
-    {
-        pickup = GetComponent<Pickup>();
-        renderers = GetComponentsInChildren<Renderer>();
-        block = new MaterialPropertyBlock();
-
-        foreach (Renderer r in renderers)
-            foreach (Material m in r.sharedMaterials)
-                if (m != null && m.name.StartsWith(contentMaterialPrefix))
-                    fullColor = m.HasProperty(BaseColor) ? m.GetColor(BaseColor) : m.color;
-
-        pickup.SetLocked(true);
-        SetContentColor(emptyColor);
-    }
+    PlacementZone counter;
+    Material content;
+    Color fullColor;
+    bool filled = false;
 
     void Start()
     {
-        PlacementZone.ItemPlaced += OnItemPlaced;
-        PuzzleManager.Instance.LayerCompleted += OnLayerCompleted;
+        pickup = GetComponent<Pickup>();
+        pickup.isLocked = true;
+
+        GameObject counterObject = GameObject.Find("CounterZone");
+        if (counterObject != null)
+        {
+            counter = counterObject.GetComponent<PlacementZone>();
+        }
+
+        Renderer rend = GetComponentInChildren<Renderer>();
+        foreach (Material mat in rend.materials)
+        {
+            if (mat.name.StartsWith(contentMaterialPrefix))
+            {
+                content = mat;
+            }
+        }
+
+        if (content != null)
+        {
+            fullColor = content.color;
+            content.color = emptyColor;
+        }
     }
 
-    void OnDestroy()
+    void Update()
     {
-        PlacementZone.ItemPlaced -= OnItemPlaced;
-        if (PuzzleManager.Instance != null) PuzzleManager.Instance.LayerCompleted -= OnLayerCompleted;
+        if (filled)
+        {
+            return;
+        }
+
+        if (fillOnLayer == -1)
+        {
+            if (counter != null && counter.HasItem(pickup.itemId))
+            {
+                Fill();
+            }
+        }
+        else if (PuzzleManager.Instance.completed > fillOnLayer)
+        {
+            Fill();
+        }
     }
 
-    void OnItemPlaced(Pickup item)
+    public bool IsFilled()
     {
-        if (fillOnLayer == FillOnPlaced && item != pickup && item.itemId == pickup.itemId) Fill();
-    }
-
-    void OnLayerCompleted(int layer)
-    {
-        if (layer == fillOnLayer) Fill();
+        return filled;
     }
 
     void Fill()
     {
-        if (filled) return;
         filled = true;
-        pickup.SetLocked(false);
-        if (isActiveAndEnabled) StartCoroutine(FillAnimation());
-        else SetContentColor(fullColor);
+        pickup.isLocked = false;
+        StartCoroutine(FillAnimation());
     }
 
     IEnumerator FillAnimation()
     {
-        Vector3 scale = transform.localScale;
+        Vector3 startScale = transform.localScale;
+        float duration = 0.6f;
+        float timer = 0f;
 
-        for (float t = 0f; t < 1f; t += Time.deltaTime / 0.6f)
+        while (timer < duration)
         {
-            SetContentColor(Color.Lerp(emptyColor, fullColor, t));
-            transform.localScale = scale * (1f + 0.2f * Mathf.Sin(t * Mathf.PI));
+            timer = timer + Time.deltaTime;
+            float amount = timer / duration;
+            if (content != null)
+            {
+                content.color = Color.Lerp(emptyColor, fullColor, amount);
+            }
+            float pop = 1f + 0.2f * Mathf.Sin(amount * Mathf.PI);
+            transform.localScale = startScale * pop;
             yield return null;
         }
 
-        SetContentColor(fullColor);
-        transform.localScale = scale;
-    }
-
-    // Tints only the bowl's content material, leaving any other materials alone.
-    void SetContentColor(Color c)
-    {
-        block.SetColor(BaseColor, c);
-        block.SetColor(LegacyColor, c);
-
-        foreach (Renderer r in renderers)
+        if (content != null)
         {
-            Material[] mats = r.sharedMaterials;
-            for (int i = 0; i < mats.Length; i++)
-                if (mats[i] != null && mats[i].name.StartsWith(contentMaterialPrefix))
-                    r.SetPropertyBlock(block, i);
+            content.color = fullColor;
         }
+        transform.localScale = startScale;
     }
 }
