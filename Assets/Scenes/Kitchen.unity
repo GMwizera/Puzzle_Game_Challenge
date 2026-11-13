@@ -285,6 +285,7 @@ MonoBehaviour:
   - 'Cook: the order matters'
   - Serve the dish
   finalGoal: Dinner is ready. Head to the dining room
+  completed: 0
 --- !u!4 &13906406
 Transform:
   m_ObjectHideFlags: 0
@@ -440,6 +441,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Pickup
   prompt: Take
   itemId: plate
+  isLocked: 0
 --- !u!65 &84869166
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -10288,6 +10290,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Pickup
   prompt: Pick up
   itemId: oil
+  isLocked: 0
 --- !u!54 &968744831
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -10853,6 +10856,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Pickup
   prompt: Pick up
   itemId: eggplant
+  isLocked: 0
 --- !u!54 &1050626517
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -11675,6 +11679,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Pickup
   prompt: Pick up
   itemId: leaves
+  isLocked: 0
 --- !u!54 &1208284319
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -12296,6 +12301,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Pickup
   prompt: Pick up
   itemId: onion
+  isLocked: 0
 --- !u!54 &1295504631
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -20282,6 +20288,7 @@ MonoBehaviour:
   interactMask:
     serializedVersion: 2
     m_Bits: 192
+  putBackDistance: 2
   crosshair: {fileID: 1815805011}
   crosshairIdle: {r: 1, g: 1, b: 1, a: 0.6}
   crosshairActive: {r: 1, g: 0.82, b: 0.35, a: 1}
@@ -23391,13 +23398,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 523847807064415131}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.083, y: -0.745, z: -0.062}
+  m_LocalRotation: {x: -0.0002072528, y: -0.0008223704, z: -0.00059465936, w: 0.99999946}
+  m_LocalPosition: {x: 0.08299999, y: -0.74500006, z: -0.061999895}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 9016406960813764591}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -0.024, y: -0.094, z: -0.068}
 --- !u!23 &2361831676553688877
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -29692,6 +29699,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OpenOnUse
   prompt: Open fridge
   door: {fileID: 6544397417596457831}
+  closePrompt: Close fridge
 --- !u!114 &6544397417596457831
 MonoBehaviour:
   m_ObjectHideFlags: 0
